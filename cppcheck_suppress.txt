@@ -1,0 +1,8 @@
+missingInclude
+missingIncludeSystem
+checkersReport
+unusedFunction
+unmatchedSuppression
+unreadVariable:*src/test/bench.cpp
+unusedAllocatedMemory:*src/test/bench.cpp
+*:3thd/*
