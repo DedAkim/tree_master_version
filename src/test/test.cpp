@@ -55,46 +55,49 @@ template <typename Value>
 void CheckPrefixKeys(const prefix::Prefix<Value>& prefixes,
                      const std::map<std::string, Value>& expected) {
     for (const auto& [key, expected_value] : expected) {
-        auto found = prefixes.keys->find(key);
-        ASSERT_NE(found, prefixes.keys->end()) << "Key '" << key << "' not found in prefix tree";
+        auto found = prefixes.keys.find(key);
+        ASSERT_NE(found, prefixes.keys.end()) << "Key '" << key << "' not found in prefix tree";
         ASSERT_FALSE(found->second.empty()) << "Values vector for key '" << key << "' is empty";
         EXPECT_EQ(*(found->second[0]), expected_value) << "Value mismatch for key '" << key << "'";
     }
 }
 
-int RunTests() {
-    int argc = 1;
-    char* argv[] = { (char*)"test_bench" };
+
+
+int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+/*
+static void prove_prefixes(prefix::Prefix<int>& prefixes) {
+    
+    prefixes.RangeAdd("100", "199", 1);
+    prefixes.RangeAdd("101", "108", 2, true);
+    prefixes.RangeAdd("103", "105", 3, true);
+    prefixes.RangeAdd("119", "151", 4, true);
+    //prefixes.RangeAdd("140", "200", 5, true);
 
-int main() {
-    std::thread test_thread(RunTests);
-    test_thread.detach();
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    return 0;
 }
 
 TEST(TestPrefix, TreeStructureAfterRangeAdd) {
     prefix::Prefix<int> prefixes;
+
     init_prefixes(prefixes);
     
     std::map<std::string, int> expected = {
+        {"201000000000000", NULL},
         {"250019120223473", 17198},
         {"655100000000000", 16087},
         {"655100999999999", 16087},
         {"655101113159589", 16087},
         {"655101110000000", 16087},
         {"655109999999999", 16088},
+        {"902099999999999", NULL},
+        
     };
 
-/*
-    prefixes.RangeAdd("100", "199", 1);
-    prefixes.RangeAdd("101", "108", 2, true);
-    prefixes.RangeAdd("103", "105", 3, true);
-    prefixes.RangeAdd("119", "151", 4, true);
 
+    prove_prefixes(prefixes);
     std::map<std::string, int> expected = {
         {"100", 1},
         {"101", 2},
@@ -110,26 +113,15 @@ TEST(TestPrefix, TreeStructureAfterRangeAdd) {
         {"119", 4},
         {"120", 4},
         {"121", 4},
-        {"150", 4},
+        {"140", 4},
         {"151", 4},
+        {"152", 1},
     };
-*/
 
+    prefixes.BuildKeysMap();
     CheckPrefixKeys(prefixes, expected);
 }
 
-static void prove_prefixes(prefix::Prefix<int>& prefixes) {
-    
-    init_prefixes(prefixes);
-    /*
-    prefixes.RangeAdd("100", "199", 1);
-    prefixes.RangeAdd("101", "108", 2, true);
-    prefixes.RangeAdd("103", "105", 3, true);
-    prefixes.RangeAdd("119", "151", 4, true);
-    prefixes.RangeAdd("140", "200", 5, true);
-    */
-}
-/*
 TEST(TestPrefix, ProveTest1) {
     prefix::Prefix<int> prefixes;
     prove_prefixes(prefixes);
@@ -265,13 +257,24 @@ TEST(TestPrefix, ProveTest15) {
         EXPECT_EQ(*value, 1);
     }
 }
+
 */
 
 
-
-TEST(TestPrefix, ProveTest1) {
+TEST(TestPrefix, SearchValue1) {
     prefix::Prefix<int> prefixes;
-    prove_prefixes(prefixes);
+    prefixes.Clear();
+    init_prefixes(prefixes);
+    auto value = prefixes.Search("201000000000000");
+    if (value = nullptr) {
+        EXPECT_EQ(value, nullptr);
+    }
+}
+
+TEST(TestPrefix, SearchValue2) {
+    prefix::Prefix<int> prefixes;
+    prefixes.Clear();
+    init_prefixes(prefixes);
     auto value = prefixes.Search("250019120223473");
     EXPECT_NE(value, nullptr);
     if (value != nullptr) {
@@ -279,9 +282,10 @@ TEST(TestPrefix, ProveTest1) {
     }
 }
 
-TEST(TestPrefix, ProveTest2) {
+TEST(TestPrefix, SearchValue3) {
     prefix::Prefix<int> prefixes;
-    prove_prefixes(prefixes);
+    prefixes.Clear();
+    init_prefixes(prefixes);
     auto value = prefixes.Search("655100000000000");
     EXPECT_NE(value, nullptr);
     if (value != nullptr) {
@@ -289,9 +293,10 @@ TEST(TestPrefix, ProveTest2) {
     }
 }
 
-TEST(TestPrefix, ProveTest3) {
+TEST(TestPrefix, SearchValue4) {
     prefix::Prefix<int> prefixes;
-    prove_prefixes(prefixes);
+    prefixes.Clear();
+    init_prefixes(prefixes);
     auto value = prefixes.Search("655100999999999");
     EXPECT_NE(value, nullptr);
     if (value != nullptr) {
@@ -299,9 +304,10 @@ TEST(TestPrefix, ProveTest3) {
     }
 }
 
-TEST(TestPrefix, ProveTest4) {
+TEST(TestPrefix, SearchValue5) {
     prefix::Prefix<int> prefixes;
-    prove_prefixes(prefixes);
+    prefixes.Clear();
+    init_prefixes(prefixes);
     auto value = prefixes.Search("655101113159589");
     EXPECT_NE(value, nullptr);
     if (value != nullptr) {
@@ -309,9 +315,10 @@ TEST(TestPrefix, ProveTest4) {
     }
 }
 
-TEST(TestPrefix, ProveTest5) {
+TEST(TestPrefix, SearchValue6) {
     prefix::Prefix<int> prefixes;
-    prove_prefixes(prefixes);
+    prefixes.Clear();
+    init_prefixes(prefixes);
     auto value = prefixes.Search("655101110000000");
     EXPECT_NE(value, nullptr);
     if (value != nullptr) {
@@ -319,9 +326,10 @@ TEST(TestPrefix, ProveTest5) {
     }
 }
 
-TEST(TestPrefix, ProveTest6) {
+TEST(TestPrefix, SearchValue7) {
     prefix::Prefix<int> prefixes;
-    prove_prefixes(prefixes);
+    prefixes.Clear();
+    init_prefixes(prefixes);
     auto value = prefixes.Search("655109999999999");
     EXPECT_NE(value, nullptr);
     if (value != nullptr) {
@@ -329,3 +337,13 @@ TEST(TestPrefix, ProveTest6) {
     }
 }
 
+TEST(TestPrefix, SearchValue8) {
+    prefix::Prefix<int> prefixes;
+    prefixes.Clear();
+    init_prefixes(prefixes);
+    auto value = prefixes.Search("902099999999999");
+    if (value = nullptr) {
+        EXPECT_EQ(value, nullptr);
+    }
+}
+    

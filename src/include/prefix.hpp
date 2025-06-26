@@ -18,143 +18,85 @@
 #include <fmt/core.h>
 
 #include <iostream>
-#include <algorithm>
 #include <cmath>
-#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+#include <cerrno>
+#include <cstdlib>
+#include <algorithm>
 
-#include "sparsepp/spp.h"
-
-//!@namespace prefix
 namespace prefix {
 
-    //!@class Prefix<T>
-    //!@note Imlements prefix search tree algorigthm, search values belonging to numeric range or numeric prefix.
-    //!| The algorithm expands the range of numbers into a prefix tree.
-    //!| Number ranges must have the following properties:
-    //!|   - A small range can clarify a larger range if overlapping is permitted, but intersection of ranges is not
-    //!|     permitted.
-    //!|   - Search returns the value belonging to the smallest range.
-    //!|   - Ranges must be added in sorted order, largest range first, then smaller range, or the order must be
-    //!|     ensured in the implementation of the addition ranges into the search structure.
-    //!|   - Number ranges must be the same length.
+template <typename Value>
+class Prefix {
+public:
+    typedef Value value_t;
+    typedef std::shared_ptr<value_t> value_ptr;
+    std::unordered_map<std::string, std::vector<value_ptr>> keys;
+    std::unordered_map<std::string, std::vector<value_ptr>> BuildKeysMap();
 
-    template <typename Value>
-    class Prefix {
-        public:
-            //!@typedef value_t, value type
-            typedef Value value_t;
-            //!@typedef value_ptr, value pointer
-            typedef std::shared_ptr<value_t> value_ptr;
+private:
 
-        
-            //!@typedef hash_t, map<key, values> prefixes map, key is a prefix part of a range, values is list of
-            //!| values defined by range
-            typedef spp::sparse_hash_map<std::string, std::vector<value_ptr>> hash_t;
-            //!@typedef hash_ptr, shared pointer to prefixes map
-            // FIXME replace by unique ptr
-            typedef std::shared_ptr<hash_t> hash_ptr;
-            //!@typedef length_keys_pair_t pair<prefix length, prefixes map> prefixes pairs
-            typedef std::pair<size_t, hash_ptr> length_keys_pair_t;
+    static long long pow10(int exp);
 
-            //!@class length_key_cmp, comparer for ordering search structure of prefixes lengthes
-            struct length_key_cmp {
-                    bool operator()(const size_t& lhs, const size_t& rhs) const { return lhs > rhs; }
-            };
+    std::string NormalizeKey(const std::string& str, size_t length = 15, char pad_char = '0');
 
-            //!@typedef length_keys_t, map<prefixes length, prefixes map, length comparer>
-            typedef std::map<size_t, hash_ptr, length_key_cmp> length_keys_t;
-            //!@typedef search_t, vector of prefixes pairs
-            typedef std::vector<length_keys_pair_t> search_t;
+    std::string NormalizePrefix(const std::string& prefix, size_t length = 15, char pad_char = '0');
 
-            //!@member keys, prefixes map
-            hash_ptr keys;
+    std::string ToFixedLengthString(long long number, size_t length = 15);
 
-            //!@member search unique_ptr, prefixes tree search structure - array of key lengthes in descent order
-            //!| referenced to prefixes map
-            std::unique_ptr<search_t> search;
+    struct Node
+    {
+        std::string key_part;
+        std::string range_start;
+        std::string range_end;
+        std::vector<value_ptr> values;
+        std::unordered_map<char, std::unique_ptr<Node>> children;
 
-            //!@member builede bool, flags shows that search structure is builded after added ranges, require to build
-            //!| before call check and search
-            bool builded;
-
-            //!@fn add, add prefix to keys referenced to value pointer
-            //!@param prefix string
-            //!@param value shared_ptr, pointer to value
-            //!@param overlap bool, overlapping ranges permition:
-            //!| true allow
-            //!| false forbidden
-            //!@param check bool, check search structure after insert a prefix
-            //!@return int, 0 ok| 1 error
-            int add(const std::string& prefix, value_ptr value, bool overlap, bool check);
-
-            //!@fn build, build search structure for added ranges
-            //!@return noting
-            int build();
-
-            //!@fn clear search structure
-            //!@return noting
-            void erase() {
-                search = nullptr;
-                builded = false;
-            }
-
-        
-            //!@fn ctor
-            Prefix() : keys{std::make_shared<hash_t>()}, search{nullptr}, builded{false} {}
-
-            //!@fn dtor
-            ~Prefix() {}
-
-            //!@fn PrefixAdd, add prefix for value into search structure
-            //!@param prefix string
-            //!@param value Value, reference to a value
-            //!@param overlap bool, overlapping ranges permition, default is forbidden:
-            //!| true allow
-            //!| false forbidden
-            //!@param check bool, default is not check, check search structure after insert a prefix
-            //!@return int, 0 ok| 1 error
-            int PrefixAdd(const std::string& prefix, value_t&& value, bool overlap = false, bool check = false);
-
-            //!@fn RangeAdd, add number range for value into search structure
-            //!@param from string, number range start
-            //!@param till string, number range end
-            //!@param value Value, reference to a value
-            //!@param overlap bool, overlapping ranges permition, default is forbidden:
-            //!| true allow
-            //!| false forbidden
-            //!@param check bool, default is not check, check search structure after insert a prefix
-            //!@return int, 0 ok| 1 error
-            int RangeAdd(std::string from, std::string till, value_t&& value, bool overlap = false, bool check = false);
-
-            //!@fn Search, searching number in prefix tree structure
-            //!@param number string, number to search
-            //!@param overlap_prefix, share pointer to prefix string by which number is found, default is nullptr
-            //!@return shared_ptr, shared pointer to value
-            //!| nullptr if not found a value
-            //!| reference to value if value is found
-            value_ptr Search(const std::string& number, std::shared_ptr<std::string> overlap_prefix = nullptr);
-
-            //!@fn SearchAll, searching number in prefix tree structure
-            //!@param number string, number to search
-            //!@return vector<shared_ptr>, list of founded values belonging to number ranges, sorted in order of the
-            //!| length of the number range
-            typename std::vector<value_ptr> SearchAll(const std::string& number);
-
-            //!@fn Check, check number range in prefix tree returns the same value for each number in the range
-            //!@param from string, number range start
-            //!@param till string, number range end
-            //!@param value Value, reference to a value
-            //!@param overlap bool, range may overlapped in prefix tree
-            //!| true is overlapped
-            //!| false is not
-            //!@return int, 0 ok| 1 error
-            int Check(const std::string& from, const std::string& till, value_t&& value, bool overlap);
+        Node(const std::string& key = "", const std::string& start = "", const std::string& end = "") : key_part(key), range_start(start), range_end(end) {}
     };
 
-#include "prefix_impl.hpp"
+    std::unique_ptr<Node> root;
+    void BuildKeysMapInternal(Node* node, const std::string& prefix, std::unordered_map<std::string, std::vector<value_ptr>>& map);
 
-}  // namespace prefix
+    void SplitRangeToPrefixesRecursive(long long start, long long end, size_t length, std::vector<std::string>& out);
+    
+    std::vector<std::string> SplitRangeToPrefixes(long long start, long long end);
+
+    int add(const std::string& key, value_ptr value, bool overlap, bool check);
+
+    void InsertRange(Node* node, const std::string& prefix, const std::string& range_start, const std::string& range_end, value_ptr value);
+
+public:
+    Prefix() : root(std::make_unique<Node>("")) {}
+
+    ~Prefix() = default;
+
+    void Clear();
+
+    int PrefixAdd(const std::string& prefix, value_t&& value, bool overlap = false, bool check = false);
+
+    int RangeAdd(const std::string& from, const std::string& till, value_t&& value, bool overlap = false, bool check = false);
+
+    value_ptr Search(const std::string& key);
+
+    std::vector<value_ptr> SearchAll(const std::string& key);
+
+    int Check(const std::string& from, const std::string& till, value_t&& value, bool overlap);
+
+private:
+
+    int InsertInternal(Node* node, const std::string& key, value_ptr value, bool overlap);
+
+    value_ptr SearchInternal(Node* node, const std::string& key, size_t pos = 0, value_ptr last_found = nullptr);
+
+    void SearchAllInternal(Node* node, const std::string& key, size_t pos, std::vector<value_ptr>& results);
+
+};
+
+} // namespace prefix
+
+#include "prefix_impl.hpp"
