@@ -62,12 +62,11 @@ void CheckPrefixKeys(const prefix::Prefix<Value>& prefixes,
     }
 }
 
-
-
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
 /*
 static void prove_prefixes(prefix::Prefix<int>& prefixes) {
     
@@ -81,21 +80,6 @@ static void prove_prefixes(prefix::Prefix<int>& prefixes) {
 
 TEST(TestPrefix, TreeStructureAfterRangeAdd) {
     prefix::Prefix<int> prefixes;
-
-    init_prefixes(prefixes);
-    
-    std::map<std::string, int> expected = {
-        {"201000000000000", NULL},
-        {"250019120223473", 17198},
-        {"655100000000000", 16087},
-        {"655100999999999", 16087},
-        {"655101113159589", 16087},
-        {"655101110000000", 16087},
-        {"655109999999999", 16088},
-        {"902099999999999", NULL},
-        
-    };
-
 
     prove_prefixes(prefixes);
     std::map<std::string, int> expected = {
@@ -118,7 +102,7 @@ TEST(TestPrefix, TreeStructureAfterRangeAdd) {
         {"152", 1},
     };
 
-    prefixes.BuildKeysMap();
+    prefixes.Clear();
     CheckPrefixKeys(prefixes, expected);
 }
 
@@ -266,7 +250,7 @@ TEST(TestPrefix, SearchValue1) {
     prefixes.Clear();
     init_prefixes(prefixes);
     auto value = prefixes.Search("201000000000000");
-    if (value = nullptr) {
+    if (value == nullptr) {
         EXPECT_EQ(value, nullptr);
     }
 }
@@ -342,7 +326,7 @@ TEST(TestPrefix, SearchValue8) {
     prefixes.Clear();
     init_prefixes(prefixes);
     auto value = prefixes.Search("902099999999999");
-    if (value = nullptr) {
+    if (value == nullptr) {
         EXPECT_EQ(value, nullptr);
     }
 }

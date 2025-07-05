@@ -30,23 +30,22 @@
 
 namespace prefix {
 
+    static size_t len = 15;
+
 template <typename Value>
 class Prefix {
 public:
     typedef Value value_t;
     typedef std::shared_ptr<value_t> value_ptr;
     std::unordered_map<std::string, std::vector<value_ptr>> keys;
-    std::unordered_map<std::string, std::vector<value_ptr>> BuildKeysMap();
 
 private:
 
     static long long pow10(int exp);
 
-    std::string NormalizeKey(const std::string& str, size_t length = 15, char pad_char = '0');
+    std::string NormalizePrefix(const std::string& prefix, size_t length = len, char pad_char = '0');
 
-    std::string NormalizePrefix(const std::string& prefix, size_t length = 15, char pad_char = '0');
-
-    std::string ToFixedLengthString(long long number, size_t length = 15);
+    std::string ToFixedLengthString(long long number, size_t length = len);
 
     struct Node
     {
@@ -60,15 +59,14 @@ private:
     };
 
     std::unique_ptr<Node> root;
-    void BuildKeysMapInternal(Node* node, const std::string& prefix, std::unordered_map<std::string, std::vector<value_ptr>>& map);
 
     void SplitRangeToPrefixesRecursive(long long start, long long end, size_t length, std::vector<std::string>& out);
     
     std::vector<std::string> SplitRangeToPrefixes(long long start, long long end);
 
-    int add(const std::string& key, value_ptr value, bool overlap, bool check);
-
     void InsertRange(Node* node, const std::string& prefix, const std::string& range_start, const std::string& range_end, value_ptr value);
+
+    value_ptr SearchInternal(Node* node, const std::string& key, size_t pos = 0, value_ptr last_found = nullptr);
 
 public:
     Prefix() : root(std::make_unique<Node>("")) {}
@@ -77,24 +75,9 @@ public:
 
     void Clear();
 
-    int PrefixAdd(const std::string& prefix, value_t&& value, bool overlap = false, bool check = false);
-
     int RangeAdd(const std::string& from, const std::string& till, value_t&& value, bool overlap = false, bool check = false);
 
     value_ptr Search(const std::string& key);
-
-    std::vector<value_ptr> SearchAll(const std::string& key);
-
-    int Check(const std::string& from, const std::string& till, value_t&& value, bool overlap);
-
-private:
-
-    int InsertInternal(Node* node, const std::string& key, value_ptr value, bool overlap);
-
-    value_ptr SearchInternal(Node* node, const std::string& key, size_t pos = 0, value_ptr last_found = nullptr);
-
-    void SearchAllInternal(Node* node, const std::string& key, size_t pos, std::vector<value_ptr>& results);
-
 };
 
 } // namespace prefix
